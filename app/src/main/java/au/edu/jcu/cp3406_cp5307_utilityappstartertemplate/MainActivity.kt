@@ -59,6 +59,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -138,6 +139,17 @@ fun UtilityApp(
 
     val currentUiState by rememberUpdatedState(uiState)
     val currentSoundManager by rememberUpdatedState(soundManager)
+
+    // Handle music state changes while the app is in foreground (e.g. content loads or settings change)
+    LaunchedEffect(uiState.musicEnabled, uiState.selectedMusicTheme, uiState.content) {
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            if (uiState.musicEnabled && (uiState.content is WordContentState.Success || uiState.content is WordContentState.Error)) {
+                soundManager.handleMusicState(true, uiState.selectedMusicTheme)
+            } else {
+                soundManager.handleMusicState(false, uiState.selectedMusicTheme)
+            }
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->

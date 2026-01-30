@@ -7,6 +7,7 @@ import android.media.MediaPlayer
 import android.media.ToneGenerator
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -33,7 +34,7 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     private var mediaPlayer: MediaPlayer? = null
     private var currentThemeIndex: Int = -1
     private var volumeAnimator: ValueAnimator? = null
-    private var targetVolume: Float = 0.15f
+    private var targetVolume: Float = 0.5f // Increased volume
 
     private val themes = listOf(
         R.raw.theme1,
@@ -80,19 +81,30 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     }
 
     private fun createAndStartPlayer(themeIndex: Int) {
+        if (themeIndex !in themes.indices) return
         currentThemeIndex = themeIndex
+        
+        // Use a background thread for creation but ensure we don't start multiple
         Thread {
             try {
                 val player = MediaPlayer.create(context, themes[themeIndex])
-                player?.let {
-                    it.isLooping = true
-                    it.setVolume(0f, 0f)
-                    it.start()
-                    mediaPlayer = it
-                    mainHandler.post { fadeIn() }
+                if (player == null) {
+                    Log.e("SoundManager", "Failed to create MediaPlayer for theme $themeIndex")
+                    return@Thread
                 }
+                
+                player.isLooping = true
+                player.setVolume(0f, 0f)
+                player.start()
+                
+                synchronized(this) {
+                    mediaPlayer?.release()
+                    mediaPlayer = player
+                }
+                
+                mainHandler.post { fadeIn() }
             } catch (e: Exception) {
-                mediaPlayer = null
+                Log.e("SoundManager", "Error in createAndStartPlayer", e)
                 currentThemeIndex = -1
             }
         }.start()
@@ -109,15 +121,18 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     }
 
     fun stopMusic() {
-        try {
-            mediaPlayer?.let {
-                if (it.isPlaying) it.stop()
-                it.release()
+        synchronized(this) {
+            try {
+                mediaPlayer?.let {
+                    if (it.isPlaying) it.stop()
+                    it.release()
+                }
+            } catch (e: Exception) {
+                Log.e("SoundManager", "Error in stopMusic", e)
+            } finally {
+                mediaPlayer = null
+                currentThemeIndex = -1
             }
-        } catch (e: Exception) {
-        } finally {
-            mediaPlayer = null
-            currentThemeIndex = -1
         }
     }
 
@@ -140,32 +155,46 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     private fun fadeIn() {
         volumeAnimator?.cancel()
         try {
-            mediaPlayer?.start()
+            val player = mediaPlayer ?: return
+            if (!player.isPlaying) player.start()
+            
             volumeAnimator = ValueAnimator.ofFloat(0f, targetVolume).apply {
                 duration = 1000
                 addUpdateListener { animation ->
                     val volume = animation.animatedValue as Float
-                    mediaPlayer?.setVolume(volume, volume)
+                    try {
+                        mediaPlayer?.setVolume(volume, volume)
+                    } catch (e: Exception) {}
                 }
                 start()
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+            Log.e("SoundManager", "Error in fadeIn", e)
+        }
     }
 
     private fun fadeOut(onFinished: () -> Unit = {}) {
-        if (mediaPlayer == null) {
+        volumeAnimator?.cancel()
+        val player = mediaPlayer
+        if (player == null) {
             onFinished()
             return
         }
 
-        volumeAnimator?.cancel()
         try {
-            val currentVol = try { if (mediaPlayer?.isPlaying == true) targetVolume else 0f } catch (e: Exception) { 0f }
+            val currentVol = try { 
+                // We can't easily get the current volume from MediaPlayer, 
+                // so we assume it was at targetVolume if it was playing.
+                if (player.isPlaying) targetVolume else 0f 
+            } catch (e: Exception) { 0f }
+            
             volumeAnimator = ValueAnimator.ofFloat(currentVol, 0f).apply {
                 duration = 800
                 addUpdateListener { animation ->
                     val volume = animation.animatedValue as Float
-                    mediaPlayer?.setVolume(volume, volume)
+                    try {
+                        mediaPlayer?.setVolume(volume, volume)
+                    } catch (e: Exception) {}
                 }
                 addListener(object : android.animation.AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: android.animation.Animator) {
@@ -175,6 +204,7 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
                 start()
             }
         } catch (e: Exception) {
+            Log.e("SoundManager", "Error in fadeOut", e)
             onFinished()
         }
     }
