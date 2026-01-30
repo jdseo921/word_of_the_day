@@ -21,7 +21,7 @@ import java.util.Locale
 import javax.inject.Inject
 
 sealed interface WordContentState {
-    object Loading : WordContentState
+    data object Loading : WordContentState
     data class Success(
         val word: String,
         val partOfSpeech: String,
@@ -51,29 +51,30 @@ class WordViewModel @Inject constructor(
 
     private val _contentState = MutableStateFlow<WordContentState>(WordContentState.Loading)
     
+    // Optimized combine chain to ensure faster emission and cleaner code
     val uiState: StateFlow<WordUiState> = combine(
         _contentState,
         preferencesManager.refreshCount,
         preferencesManager.isStrictSelection,
         preferencesManager.selectedLanguage,
-        preferencesManager.isDarkTheme
-    ) { content, count, strict, lang, dark ->
+        preferencesManager.isDarkTheme,
+        preferencesManager.musicEnabled,
+        preferencesManager.selectedMusicTheme,
+        preferencesManager.fontSizeMultiplier
+    ) { args ->
         WordUiState(
-            content = content,
-            refreshCount = count,
-            isStrictSelection = strict,
-            selectedLanguage = lang,
-            isDarkTheme = dark
+            content = args[0] as WordContentState,
+            refreshCount = args[1] as Int,
+            isStrictSelection = args[2] as Boolean,
+            selectedLanguage = args[3] as String,
+            isDarkTheme = args[4] as Boolean,
+            musicEnabled = args[5] as Boolean,
+            selectedMusicTheme = args[6] as Int,
+            fontSizeMultiplier = args[7] as Float
         )
-    }.combine(preferencesManager.musicEnabled) { state, music ->
-        state.copy(musicEnabled = music)
-    }.combine(preferencesManager.selectedMusicTheme) { state, theme ->
-        state.copy(selectedMusicTheme = theme)
-    }.combine(preferencesManager.fontSizeMultiplier) { state, fontSize ->
-        state.copy(fontSizeMultiplier = fontSize)
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.Eagerly,
         initialValue = WordUiState()
     )
 
@@ -98,7 +99,6 @@ class WordViewModel @Inject constructor(
             val savedData = preferencesManager.wordData.first()
 
             if (lastDate == today && savedData != null) {
-                _contentState.value = WordContentState.Loading
                 val (word, pos, def) = savedData
                 fetchNewsUsage(word, emptyList(), word, pos, def)
             } else {
@@ -179,6 +179,9 @@ class WordViewModel @Inject constructor(
                         }
                     }
                     wordQueue.addAll(filteredWords)
+                    if (wordQueue.isEmpty() && words.isNotEmpty()) {
+                        wordQueue.addAll(words)
+                    }
                 }.onFailure { _ ->
                     _contentState.value = WordContentState.Error("Failed to fetch new words.")
                     return@launch
@@ -190,7 +193,8 @@ class WordViewModel @Inject constructor(
                 fetchWordData(nextWord)
             } else {
                 repository.getRandomWords(10).onSuccess { words ->
-                    fetchWordData(words.first())
+                    if (words.isNotEmpty()) fetchWordData(words.first())
+                    else _contentState.value = WordContentState.Error("No suitable words found. Try again.")
                 }.onFailure { _ ->
                     _contentState.value = WordContentState.Error("No suitable words found. Try again.")
                 }
@@ -226,7 +230,8 @@ class WordViewModel @Inject constructor(
             val def = meaning?.definitions?.firstOrNull()?.definition ?: "No definition found"
             fetchNewsUsage(word, emptyList(), response.word, pos, def)
         }.onFailure {
-            refreshWord(isManual = false)
+            // Avoid infinite loops by providing a default error if retry fails too many times
+            _contentState.value = WordContentState.Error("Word data currently unavailable.")
         }
     }
 

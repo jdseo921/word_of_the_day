@@ -7,13 +7,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -59,11 +59,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,160 +72,31 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.data.api.Article
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.SoundManager
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.WordContentState
-import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.WordUiState
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.WordViewModel
-import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.theme.CP3406_CP5603UtilityAppStarterTemplateTheme
+import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.t
+import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.translatePartOfSpeech
+import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.theme.CP3406_CP5307UtilityAppStarterTemplateTheme
 import coil.compose.AsyncImage
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.TimeZone
 import javax.inject.Inject
 import kotlin.math.abs
-
-/**
- * Translations map for dynamic language switching.
- */
-object Translations {
-    val data = mapOf(
-        "English" to mapOf(
-            "utility_tab" to "Word",
-            "settings_tab" to "Settings",
-            "utility_title" to "Word of the Day",
-            "settings_title" to "Settings",
-            "refreshes_remaining" to "Refreshes remaining",
-            "resets_at_midnight" to "resets at midnight",
-            "new_word_button" to "NEW WORD",
-            "definition_label" to "Definition",
-            "example_usage_title" to "Example Usage",
-            "no_news_context" to "No news articles found for this word context.",
-            "appearance_label" to "Appearance",
-            "dark_mode" to "Dark Mode",
-            "light_mode" to "Light Mode",
-            "selection_strategy" to "Selection Strategy",
-            "strict_mode" to "Strict (No repeats)",
-            "avoid_30_mode" to "Avoid last 30",
-            "font_size_label" to "Font Size",
-            "timezone_label" to "Timezone",
-            "language_label" to "Language",
-            "disclaimer" to "Note: Dictionary definitions and news contexts can sometimes be quirky dance partners. If the usage above feels a bit 'off-script', it's a great chance to learn both senses of the word!",
-            "show_interaction" to "Show Interaction",
-            "hide_interaction" to "Hide Interaction",
-            "context_challenge" to "Context challenge: Try to use '%s' in a sentence about this news topic.",
-            "dev_tools" to "Developer Tools",
-            "dev_reset_button" to "Reset Daily Refresh Count",
-            "noun" to "noun",
-            "verb" to "verb",
-            "adjective" to "adjective",
-            "adverb" to "adverb",
-            "pronoun" to "pronoun",
-            "preposition" to "preposition",
-            "conjunction" to "conjunction",
-            "interjection" to "interjection",
-            "article" to "article",
-            "music_label" to "Background Music",
-            "music_theme_label" to "Background Music Selection"
-        ),
-        "Mandarin" to mapOf(
-            "utility_tab" to "单词",
-            "settings_tab" to "设置",
-            "utility_title" to "Word of the Day",
-            "settings_title" to "设置",
-            "refreshes_remaining" to "剩余刷新次数",
-            "resets_at_midnight" to "午夜重置",
-            "new_word_button" to "获取新单词",
-            "definition_label" to "定义",
-            "example_usage_title" to "用例参考",
-            "no_news_context" to "未找到该单词的新闻背景。",
-            "appearance_label" to "外观",
-            "dark_mode" to "深色模式",
-            "light_mode" to "浅色模式",
-            "selection_strategy" to "选择策略",
-            "strict_mode" to "严格（不重复）",
-            "avoid_30_mode" to "避开最后30个",
-            "font_size_label" to "字体大小",
-            "timezone_label" to "时区",
-            "language_label" to "语言",
-            "disclaimer" to "注意：词典定义和新闻背景有时会显得不太一致。如果上述用法感觉有点“不按剧本”，这正是学习该单词两种含义的好机会！",
-            "show_interaction" to "显示互动",
-            "hide_interaction" to "隐藏互动",
-            "context_challenge" to "语境挑战：尝试针对此新闻主题使用“%s”造句。",
-            "dev_tools" to "开发者工具",
-            "dev_reset_button" to "重置每日刷新计数",
-            "noun" to "名词",
-            "verb" to "动词",
-            "adjective" to "形容词",
-            "adverb" to "副词",
-            "pronoun" to "代词",
-            "preposition" to "介词",
-            "conjunction" to "连词",
-            "interjection" to "感叹词",
-            "article" to "冠词",
-            "music_label" to "背景音乐",
-            "music_theme_label" to "背景音乐选择"
-        ),
-        "Korean" to mapOf(
-            "utility_tab" to "단어",
-            "settings_tab" to "설정",
-            "utility_title" to "Word of the Day",
-            "settings_title" to "설정",
-            "refreshes_remaining" to "남은 새로고침 횟수",
-            "resets_at_midnight" to "자정에 초기화됨",
-            "new_word_button" to "새 단어",
-            "definition_label" to "정의",
-            "example_usage_title" to "사용 예시",
-            "no_news_context" to "이 단어에 대한 뉴스 기사를 찾을 수 없습니다.",
-            "appearance_label" to "화면 테마",
-            "dark_mode" to "다크 모드",
-            "light_mode" to "라이트 모드",
-            "selection_strategy" to "선택 전략",
-            "strict_mode" to "엄격 (중복 없음)",
-            "avoid_30_mode" to "최근 30개 제외",
-            "font_size_label" to "글자 크기",
-            "timezone_label" to "시간대",
-            "language_label" to "언어",
-            "disclaimer" to "참고: 사전 정의와 뉴스 맥락은 때때로 다를 수 있습니다. 위의 사용법이 어색하게 느껴진다면, 단어의 두 가지 의미를 모두 배울 수 있는 좋은 기회입니다!",
-            "show_interaction" to "상호작용 보기",
-            "hide_interaction" to "상호작용 숨기기",
-            "context_challenge" to "맥락 챌린지: 이 뉴스 주제에 대해 '%s' 단어를 사용하여 문장을 만들어 보세요.",
-            "dev_tools" to "개발자 도구",
-            "dev_reset_button" to "새로고침 횟수 초기화",
-            "noun" to "명사",
-            "verb" to "동사",
-            "adjective" to "형용사",
-            "adverb" to "부사",
-            "pronoun" to "대명사",
-            "preposition" to "전치사",
-            "conjunction" to "접속사",
-            "interjection" to "감탄사",
-            "article" to "관사",
-            "music_label" to "배경 음악",
-            "music_theme_label" to "배경 음악 선택"
-        )
-    )
-}
-
-fun t(key: String, language: String): String = Translations.data[language]?.get(key) ?: Translations.data["English"]!![key]!!
-
-fun translatePartOfSpeech(pos: String, language: String): String {
-    val key = pos.lowercase().trim()
-    return Translations.data[language]?.get(key) ?: pos
-}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -239,13 +110,18 @@ class MainActivity : ComponentActivity() {
             val viewModel: WordViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsState()
 
-            CP3406_CP5603UtilityAppStarterTemplateTheme(
+            CP3406_CP5307UtilityAppStarterTemplateTheme(
                 darkTheme = uiState.isDarkTheme
             ) {
-                UtilityApp(
-                    soundManager = soundManager,
-                    viewModel = viewModel
-                )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    UtilityApp(
+                        soundManager = soundManager,
+                        viewModel = viewModel
+                    )
+                }
             }
         }
     }
@@ -260,14 +136,16 @@ fun UtilityApp(
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Lifecycle observer to handle pause/resume music
+    val currentUiState by rememberUpdatedState(uiState)
+    val currentSoundManager by rememberUpdatedState(soundManager)
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_PAUSE -> soundManager.pauseMusic()
+                Lifecycle.Event.ON_PAUSE -> currentSoundManager.pauseMusic()
                 Lifecycle.Event.ON_RESUME -> {
-                    if (uiState.musicEnabled && (uiState.content is WordContentState.Success || uiState.content is WordContentState.Error)) {
-                        soundManager.handleMusicState(true, uiState.selectedMusicTheme)
+                    if (currentUiState.musicEnabled && (currentUiState.content is WordContentState.Success || currentUiState.content is WordContentState.Error)) {
+                        currentSoundManager.handleMusicState(true, currentUiState.selectedMusicTheme)
                     }
                 }
                 else -> {}
@@ -279,99 +157,87 @@ fun UtilityApp(
         }
     }
 
-    // Control music based on state and content status
-    LaunchedEffect(uiState.musicEnabled, uiState.selectedMusicTheme, uiState.content) {
-        if (uiState.content is WordContentState.Success || uiState.content is WordContentState.Error) {
-            soundManager.handleMusicState(uiState.musicEnabled, uiState.selectedMusicTheme)
-        }
-    }
-
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
             AppNavigationBar(
                 selectedTab = selectedTab,
                 language = uiState.selectedLanguage,
-                onTabSelected = {
-                    if (selectedTab != it) {
-                        selectedTab = it
+                onTabSelected = { tab ->
+                    if (selectedTab != tab) {
+                        selectedTab = tab
                         soundManager.playNavigationSound()
                     }
                 }
             )
         }
     ) { innerPadding ->
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Box(modifier = Modifier.padding(innerPadding)) {
-                AnimatedContent(
-                    targetState = selectedTab,
-                    transitionSpec = {
-                        if (targetState == "Settings") {
-                            slideInHorizontally { it } + fadeIn() togetherWith
-                                    slideOutHorizontally { -it } + fadeOut()
-                        } else {
-                            slideInHorizontally { -it } + fadeIn() togetherWith
-                                    slideOutHorizontally { it } + fadeOut()
-                        }.using(SizeTransform { _, _ -> tween<IntSize>(durationMillis = 500) })
-                    },
-                    label = "tabTransition"
-                ) { tab ->
-                    when (tab) {
-                        "Utility" -> WordScreen(
-                            state = uiState.content,
-                            refreshCount = uiState.refreshCount,
-                            fontSizeMultiplier = uiState.fontSizeMultiplier,
-                            language = uiState.selectedLanguage,
-                            onRefresh = {
-                                viewModel.refreshWord()
-                                soundManager.playRefreshSound()
-                            },
-                            onRefreshNews = {
-                                viewModel.refreshNewsOnly()
-                                soundManager.playRefreshSound()
-                            },
-                            soundManager = soundManager
-                        )
-                        "Settings" -> SettingsScreen(
-                            isDarkTheme = uiState.isDarkTheme,
-                            onThemeChange = {
-                                viewModel.setDarkTheme(it)
-                                soundManager.playToggleSound()
-                            },
-                            fontSizeMultiplier = uiState.fontSizeMultiplier,
-                            onFontSizeChange = {
-                                viewModel.setFontSizeMultiplier(it)
-                                soundManager.playToggleSound()
-                            },
-                            isStrictSelection = uiState.isStrictSelection,
-                            onStrictSelectionChange = {
-                                viewModel.toggleStrictSelection(it)
-                                soundManager.playToggleSound()
-                            },
-                            onDevResetRefresh = {
-                                viewModel.devResetRefreshCount()
-                                soundManager.playRefreshSound()
-                            },
-                            selectedLanguage = uiState.selectedLanguage,
-                            onLanguageChange = {
-                                viewModel.setLanguage(it)
-                                soundManager.playToggleSound()
-                            },
-                            musicEnabled = uiState.musicEnabled,
-                            onMusicEnabledChange = {
-                                viewModel.setMusicEnabled(it)
-                                soundManager.playToggleSound()
-                            },
-                            selectedMusicTheme = uiState.selectedMusicTheme,
-                            onMusicThemeChange = {
-                                viewModel.setMusicTheme(it)
-                                soundManager.playToggleSound()
-                            },
-                            soundManager = soundManager
-                        )
-                    }
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                },
+                label = "tabTransition"
+            ) { tab ->
+                when (tab) {
+                    "Utility" -> WordScreen(
+                        state = uiState.content,
+                        refreshCount = uiState.refreshCount,
+                        fontSizeMultiplier = uiState.fontSizeMultiplier,
+                        language = uiState.selectedLanguage,
+                        onRefresh = {
+                            viewModel.refreshWord()
+                            soundManager.playRefreshSound()
+                        },
+                        onRefreshNews = {
+                            viewModel.refreshNewsOnly()
+                            soundManager.playRefreshSound()
+                        },
+                        soundManager = soundManager
+                    )
+                    "Settings" -> SettingsScreen(
+                        isDarkTheme = uiState.isDarkTheme,
+                        onThemeChange = {
+                            viewModel.setDarkTheme(it)
+                            soundManager.playToggleSound()
+                        },
+                        fontSizeMultiplier = uiState.fontSizeMultiplier,
+                        onFontSizeChange = {
+                            viewModel.setFontSizeMultiplier(it)
+                            soundManager.playToggleSound()
+                        },
+                        isStrictSelection = uiState.isStrictSelection,
+                        onStrictSelectionChange = {
+                            viewModel.toggleStrictSelection(it)
+                            soundManager.playToggleSound()
+                        },
+                        onDevResetRefresh = {
+                            viewModel.devResetRefreshCount()
+                            soundManager.playRefreshSound()
+                        },
+                        selectedLanguage = uiState.selectedLanguage,
+                        onLanguageChange = {
+                            viewModel.setLanguage(it)
+                            soundManager.playToggleSound()
+                        },
+                        musicEnabled = uiState.musicEnabled,
+                        onMusicEnabledChange = {
+                            viewModel.setMusicEnabled(it)
+                            soundManager.playToggleSound()
+                        },
+                        selectedMusicTheme = uiState.selectedMusicTheme,
+                        onMusicThemeChange = {
+                            viewModel.setMusicTheme(it)
+                            soundManager.playToggleSound()
+                        },
+                        soundManager = soundManager
+                    )
                 }
             }
         }
@@ -414,11 +280,18 @@ fun WordScreen(
             t("utility_title", language),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = (MaterialTheme.typography.headlineMedium.fontSize.value * fontSizeMultiplier).sp
+            fontSize = (MaterialTheme.typography.headlineMedium.fontSize.value * fontSizeMultiplier).sp,
+            color = MaterialTheme.colorScheme.primary
         )
 
-        Box(modifier = Modifier.weight(1f)) {
-            AnimatedContent(targetState = state, label = "contentTransition") { currentState ->
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            AnimatedContent(
+                targetState = state,
+                label = "contentTransition",
+                transitionSpec = {
+                    (fadeIn() + scaleIn()).togetherWith(fadeOut() + scaleOut())
+                }
+            ) { currentState ->
                 when (currentState) {
                     is WordContentState.Loading -> LoadingIndicator()
                     is WordContentState.Error -> ErrorMessage(currentState.message)
@@ -696,7 +569,11 @@ fun RefreshButton(onClick: () -> Unit, fontSizeMultiplier: Float, language: Stri
 
 @Composable
 fun LoadingIndicator() = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    CircularProgressIndicator(strokeWidth = 4.dp, modifier = Modifier.scale(1.5f))
+    CircularProgressIndicator(
+        modifier = Modifier.size(64.dp),
+        color = MaterialTheme.colorScheme.primary,
+        strokeWidth = 6.dp
+    )
 }
 
 @Composable

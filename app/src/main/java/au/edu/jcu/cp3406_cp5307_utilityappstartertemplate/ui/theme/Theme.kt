@@ -1,12 +1,14 @@
 package au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.theme
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -61,7 +63,7 @@ private val ColorblindDarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun CP3406_CP5603UtilityAppStarterTemplateTheme(
+fun CP3406_CP5307UtilityAppStarterTemplateTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     isColorblindMode: Boolean = false,
     content: @Composable () -> Unit
@@ -75,9 +77,11 @@ fun CP3406_CP5603UtilityAppStarterTemplateTheme(
 
     val view = LocalView.current
     if (!view.isInEditMode) {
-        val window = (view.context as Activity).window
-        window.statusBarColor = colorScheme.primary.toArgb()
-        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        SideEffect {
+            val window = (view.context.findActivity())?.window ?: return@SideEffect
+            // window.statusBarColor = colorScheme.primary.toArgb() // Let EdgeToEdge handle this
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
     }
 
     MaterialTheme(
@@ -85,4 +89,13 @@ fun CP3406_CP5603UtilityAppStarterTemplateTheme(
         typography = Typography,
         content = content
     )
+}
+
+private fun Context.findActivity(): Activity? {
+    var context = this
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return null
 }
