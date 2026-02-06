@@ -58,13 +58,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,9 +80,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.data.api.Article
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.SoundManager
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.WordContentState
@@ -135,39 +129,6 @@ fun UtilityApp(
 ) {
     var selectedTab by remember { mutableStateOf("Utility") }
     val uiState by viewModel.uiState.collectAsState()
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    val currentUiState by rememberUpdatedState(uiState)
-    val currentSoundManager by rememberUpdatedState(soundManager)
-
-    // Handle music state changes while the app is in foreground (e.g. content loads or settings change)
-    LaunchedEffect(uiState.musicEnabled, uiState.selectedMusicTheme, uiState.content) {
-        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-            if (uiState.musicEnabled && (uiState.content is WordContentState.Success || uiState.content is WordContentState.Error)) {
-                soundManager.handleMusicState(true, uiState.selectedMusicTheme)
-            } else {
-                soundManager.handleMusicState(false, uiState.selectedMusicTheme)
-            }
-        }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> currentSoundManager.pauseMusic()
-                Lifecycle.Event.ON_RESUME -> {
-                    if (currentUiState.musicEnabled && (currentUiState.content is WordContentState.Success || currentUiState.content is WordContentState.Error)) {
-                        currentSoundManager.handleMusicState(true, currentUiState.selectedMusicTheme)
-                    }
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -217,17 +178,14 @@ fun UtilityApp(
                         isDarkTheme = uiState.isDarkTheme,
                         onThemeChange = {
                             viewModel.setDarkTheme(it)
-                            soundManager.playToggleSound()
                         },
                         fontSizeMultiplier = uiState.fontSizeMultiplier,
                         onFontSizeChange = {
                             viewModel.setFontSizeMultiplier(it)
-                            soundManager.playToggleSound()
                         },
                         isStrictSelection = uiState.isStrictSelection,
                         onStrictSelectionChange = {
                             viewModel.toggleStrictSelection(it)
-                            soundManager.playToggleSound()
                         },
                         onDevResetRefresh = {
                             viewModel.devResetRefreshCount()
@@ -235,18 +193,7 @@ fun UtilityApp(
                         },
                         selectedLanguage = uiState.selectedLanguage,
                         onLanguageChange = {
-                            viewModel.setLanguage(it)
-                            soundManager.playToggleSound()
-                        },
-                        musicEnabled = uiState.musicEnabled,
-                        onMusicEnabledChange = {
-                            viewModel.setMusicEnabled(it)
-                            soundManager.playToggleSound()
-                        },
-                        selectedMusicTheme = uiState.selectedMusicTheme,
-                        onMusicThemeChange = {
-                            viewModel.setMusicTheme(it)
-                            soundManager.playToggleSound()
+                            viewModel.setLanguage(language = it)
                         },
                         soundManager = soundManager
                     )
@@ -496,7 +443,6 @@ fun NewsContextCard(article: Article, word: String, fontSizeMultiplier: Float, l
                 Button(
                     onClick = {
                         showRetrieval = !showRetrieval
-                        soundManager.playToggleSound()
                     },
                     modifier = Modifier.align(Alignment.End),
                     shape = RoundedCornerShape(12.dp),
@@ -616,10 +562,6 @@ fun SettingsScreen(
     onDevResetRefresh: () -> Unit,
     selectedLanguage: String,
     onLanguageChange: (String) -> Unit,
-    musicEnabled: Boolean,
-    onMusicEnabledChange: (Boolean) -> Unit,
-    selectedMusicTheme: Int,
-    onMusicThemeChange: (Int) -> Unit,
     soundManager: SoundManager
 ) {
     val timezones = remember {
@@ -656,26 +598,6 @@ fun SettingsScreen(
 
                 SettingsRow(title = t("selection_strategy", selectedLanguage), subtitle = if (isStrictSelection) t("strict_mode", selectedLanguage) else t("avoid_30_mode", selectedLanguage)) {
                     Switch(checked = isStrictSelection, onCheckedChange = onStrictSelectionChange)
-                }
-
-                SettingsRow(title = t("music_label", selectedLanguage), subtitle = if (musicEnabled) "On" else "Off") {
-                    Switch(checked = musicEnabled, onCheckedChange = onMusicEnabledChange)
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(t("music_theme_label", selectedLanguage), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                        listOf(0 to "1", 1 to "2", 2 to "3").forEach { (idx, label) ->
-                            Button(
-                                onClick = { onMusicThemeChange(idx) },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (selectedMusicTheme == idx) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (selectedMusicTheme == idx) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) { Text(label, fontSize = 11.sp) }
-                        }
-                    }
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -738,6 +660,9 @@ fun SettingsScreen(
                 }
 
                 // Dev Feature: Reset Refresh Count
+                // This section allows developers to manually reset the daily refresh limit
+                // for testing purposes without waiting for the midnight automatic reset.
+                /*
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(t("dev_tools", selectedLanguage), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                     Button(
@@ -751,6 +676,7 @@ fun SettingsScreen(
                         }
                     }
                 }
+                */
             }
         }
     }

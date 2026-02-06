@@ -37,9 +37,7 @@ data class WordUiState(
     val isStrictSelection: Boolean = false,
     val selectedLanguage: String = "English",
     val isDarkTheme: Boolean = false,
-    val fontSizeMultiplier: Float = 1.0f,
-    val musicEnabled: Boolean = true,
-    val selectedMusicTheme: Int = 0
+    val fontSizeMultiplier: Float = 1.0f
 )
 
 @HiltViewModel
@@ -51,15 +49,12 @@ class WordViewModel @Inject constructor(
 
     private val _contentState = MutableStateFlow<WordContentState>(WordContentState.Loading)
     
-    // Optimized combine chain to ensure faster emission and cleaner code
     val uiState: StateFlow<WordUiState> = combine(
         _contentState,
         preferencesManager.refreshCount,
         preferencesManager.isStrictSelection,
         preferencesManager.selectedLanguage,
         preferencesManager.isDarkTheme,
-        preferencesManager.musicEnabled,
-        preferencesManager.selectedMusicTheme,
         preferencesManager.fontSizeMultiplier
     ) { args ->
         WordUiState(
@@ -68,9 +63,7 @@ class WordViewModel @Inject constructor(
             isStrictSelection = args[2] as Boolean,
             selectedLanguage = args[3] as String,
             isDarkTheme = args[4] as Boolean,
-            musicEnabled = args[5] as Boolean,
-            selectedMusicTheme = args[6] as Int,
-            fontSizeMultiplier = args[7] as Float
+            fontSizeMultiplier = args[5] as Float
         )
     }.stateIn(
         scope = viewModelScope,
@@ -123,14 +116,6 @@ class WordViewModel @Inject constructor(
 
     fun setFontSizeMultiplier(multiplier: Float) {
         viewModelScope.launch { preferencesManager.setFontSizeMultiplier(multiplier) }
-    }
-
-    fun setMusicEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setMusicEnabled(enabled) }
-    }
-
-    fun setMusicTheme(themeIndex: Int) {
-        viewModelScope.launch { preferencesManager.setSelectedMusicTheme(themeIndex) }
     }
 
     fun devResetRefreshCount() {
@@ -230,7 +215,6 @@ class WordViewModel @Inject constructor(
             val def = meaning?.definitions?.firstOrNull()?.definition ?: "No definition found"
             fetchNewsUsage(word, emptyList(), response.word, pos, def)
         }.onFailure {
-            // Avoid infinite loops by providing a default error if retry fails too many times
             _contentState.value = WordContentState.Error("Word data currently unavailable.")
         }
     }

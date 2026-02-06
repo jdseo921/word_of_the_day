@@ -36,9 +36,7 @@ object Translations {
             "preposition" to "preposition",
             "conjunction" to "conjunction",
             "interjection" to "interjection",
-            "article" to "article",
-            "music_label" to "Background Music",
-            "music_theme_label" to "Background Music Selection"
+            "article" to "article"
         ),
         "Mandarin" to mapOf(
             "utility_tab" to "单词",
@@ -74,9 +72,7 @@ object Translations {
             "preposition" to "介词",
             "conjunction" to "连词",
             "interjection" to "感叹词",
-            "article" to "冠词",
-            "music_label" to "背景音乐",
-            "music_theme_label" to "背景音乐选择"
+            "article" to "冠词"
         ),
         "Korean" to mapOf(
             "utility_tab" to "단어",
@@ -102,7 +98,7 @@ object Translations {
             "show_interaction" to "상호작용 보기",
             "hide_interaction" to "상호작용 숨기기",
             "context_challenge" to "맥락 챌린지: 이 뉴스 주제에 대해 '%s' 단어를 사용하여 문장을 만들어 보세요.",
-            "dev_tools" to "개발자 도구",
+            "dev_tools" to "개발구",
             "dev_reset_button" to "새로고침 횟수 초기화",
             "noun" to "명사",
             "verb" to "동사",
@@ -112,9 +108,7 @@ object Translations {
             "preposition" to "전치사",
             "conjunction" to "접속사",
             "interjection" to "감탄사",
-            "article" to "관사",
-            "music_label" to "배경 음악",
-            "music_theme_label" to "배경 음악 선택"
+            "article" to "관사"
         )
     )
 }

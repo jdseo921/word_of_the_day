@@ -29,9 +29,6 @@ class PreferencesManager @Inject constructor(@ApplicationContext context: Contex
     val isDarkTheme: Flow<Boolean> = dataStore.data.map { it[KEY_DARK_THEME] ?: false }
     val fontSizeMultiplier: Flow<Float> = dataStore.data.map { it[KEY_FONT_SIZE] ?: 1.0f }
     
-    val musicEnabled: Flow<Boolean> = dataStore.data.map { it[KEY_MUSIC_ENABLED] ?: true }
-    val selectedMusicTheme: Flow<Int> = dataStore.data.map { it[KEY_MUSIC_THEME] ?: 0 }
-
     val last30Words: Flow<List<String>> = dataStore.data.map { it[KEY_LAST_30] ?: "" }
         .map { if (it.isEmpty()) emptyList() else it.split(",") }
 
@@ -92,14 +89,6 @@ class PreferencesManager @Inject constructor(@ApplicationContext context: Contex
         dataStore.edit { it[KEY_FONT_SIZE] = multiplier }
     }
 
-    suspend fun setMusicEnabled(enabled: Boolean) {
-        dataStore.edit { it[KEY_MUSIC_ENABLED] = enabled }
-    }
-
-    suspend fun setSelectedMusicTheme(themeIndex: Int) {
-        dataStore.edit { it[KEY_MUSIC_THEME] = themeIndex }
-    }
-
     companion object {
         private val KEY_WORD = stringPreferencesKey("current_word")
         private val KEY_POS = stringPreferencesKey("current_pos")
@@ -112,7 +101,5 @@ class PreferencesManager @Inject constructor(@ApplicationContext context: Contex
         private val KEY_LANGUAGE = stringPreferencesKey("selected_language")
         private val KEY_DARK_THEME = booleanPreferencesKey("dark_theme")
         private val KEY_FONT_SIZE = floatPreferencesKey("font_size_multiplier")
-        private val KEY_MUSIC_ENABLED = booleanPreferencesKey("music_enabled")
-        private val KEY_MUSIC_THEME = intPreferencesKey("selected_music_theme")
     }
 }
