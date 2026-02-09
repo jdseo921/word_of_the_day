@@ -4,6 +4,11 @@ A feature-rich Android application that helps users expand their vocabulary by p
 
 ---
 
+## **Optimized Performance Environment**
+**This application is optimized to run on Android 12+ (API 31) and newer, developed using Android Studio Ladybug. It leverages modern asynchronous patterns and lazy-loading techniques to ensure a smooth, fast-launching experience even on standard hardware.**
+
+---
+
 ## Features
 
 ### 📖 Word Discovery
@@ -16,11 +21,10 @@ A feature-rich Android application that helps users expand their vocabulary by p
 - **Theming**: Supports both Light and Dark modes with seamless transitions.
 - **Accessibility**: Adjustable font sizes to suit user preferences.
 - **Selection Strategies**: Choose how new words are selected (e.g., Strict mode to avoid repeats).
-- **Daily Limits**: Intelligent refresh management with daily quotas.
+- **Daily Limits**: Intelligent refresh management with daily quotas (2 refreshes per day, resetting at midnight).
 
-### 🎵 Multimedia
-- **Background Music**: Ambient background music with multiple themes.
-- **Sound Effects**: Interactive sound feedback for navigation and UI actions.
+### 🛠 Developer Tools
+- **Reset Refresh Count**: A built-in mechanism for manual testing of the daily refresh limit (currently commented out in production code for safety).
 
 ---
 
@@ -42,7 +46,7 @@ A feature-rich Android application that helps users expand their vocabulary by p
 
 ### Prerequisites
 - Android Studio Ladybug or newer
-- API 26+ (Android 8.0) recommended
+- API 26+ (Android 8.0) minimum; **API 31+ recommended**
 - API Keys for:
   - NewsAPI.org
   - Merriam-Webster Dictionary API
@@ -50,7 +54,7 @@ A feature-rich Android application that helps users expand their vocabulary by p
 ### Installation
 1. Clone the repository.
 2. Open the project in Android Studio.
-3. (Optional) Add your API keys to the configuration.
+3. Add your API keys to `res/values/strings.xml`.
 4. Build and run on an emulator or physical device.
 
 ---

@@ -1,15 +1,13 @@
 package au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui
 
-import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.concurrent.thread
 
 @Singleton
-class SoundManager @Inject constructor(@ApplicationContext private val context: Context) {
+class SoundManager @Inject constructor() {
     private var toneGenerator: ToneGenerator? = null
 
     @Synchronized
@@ -18,7 +16,7 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
             try {
                 // Initialize ToneGenerator lazily on first use to speed up app launch
                 toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 return null
             }
         }
@@ -29,7 +27,7 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
         thread(start = true) {
             try {
                 getToneGenerator()?.startTone(type, duration)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore tone playback errors
             }
         }
