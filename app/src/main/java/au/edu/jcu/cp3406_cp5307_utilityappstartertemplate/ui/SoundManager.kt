@@ -3,22 +3,21 @@ package au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui
 import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
-import android.os.Handler
-import android.os.Looper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.concurrent.thread
 
 @Singleton
 class SoundManager @Inject constructor(@ApplicationContext private val context: Context) {
     private var toneGenerator: ToneGenerator? = null
-    private val mainHandler = Handler(Looper.getMainLooper())
 
     @Synchronized
     private fun getToneGenerator(): ToneGenerator? {
         if (toneGenerator == null) {
             try {
-                toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 80) // Increased volume
+                // Initialize ToneGenerator lazily on first use to speed up app launch
+                toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
             } catch (e: Exception) {
                 return null
             }
@@ -27,11 +26,13 @@ class SoundManager @Inject constructor(@ApplicationContext private val context: 
     }
 
     private fun playTone(type: Int, duration: Int) {
-        Thread {
+        thread(start = true) {
             try {
                 getToneGenerator()?.startTone(type, duration)
-            } catch (e: Exception) {}
-        }.start()
+            } catch (e: Exception) {
+                // Ignore tone playback errors
+            }
+        }
     }
 
     fun playRefreshSound() = playTone(ToneGenerator.TONE_SUP_PIP, 40)
