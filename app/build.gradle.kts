@@ -54,6 +54,9 @@ dependencies {
     implementation(libs.material)
     implementation(libs.coil.compose)
     
+    // Custom Tabs for faster web browsing
+    implementation("androidx.browser:browser:1.8.0")
+    
     // DataStore for persistence
     implementation("androidx.datastore:datastore-preferences:1.1.2")
     

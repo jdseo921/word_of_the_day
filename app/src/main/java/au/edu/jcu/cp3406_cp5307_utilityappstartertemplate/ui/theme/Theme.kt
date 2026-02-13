@@ -79,8 +79,11 @@ fun CP3406_CP5307UtilityAppStarterTemplateTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context.findActivity())?.window ?: return@SideEffect
-            // window.statusBarColor = colorScheme.primary.toArgb() // Let EdgeToEdge handle this
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // Use WindowCompat to ensure the system bars are visible and correctly themed
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

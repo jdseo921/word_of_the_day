@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -379,7 +380,10 @@ fun NewsContextCard(article: Article, word: String, fontSizeMultiplier: Float, l
             .fillMaxWidth()
             .clickable {
                 soundManager.playNavigationSound()
-                context.startActivity(Intent(Intent.ACTION_VIEW, article.url.toUri()))
+                val customTabsIntent = CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .build()
+                customTabsIntent.launchUrl(context, article.url.toUri())
             },
         shape = RoundedCornerShape(20.dp)
     ) {

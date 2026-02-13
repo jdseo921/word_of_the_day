@@ -72,7 +72,9 @@ class WordViewModel @Inject constructor(
     )
 
     private val wordQueue = mutableListOf<String>()
-    
+    private var retryCount = 0
+    private val MAX_RETRIES = 5
+
     private val mwApiKey: String by lazy {
         getApplication<Application>().getString(R.string.merriam_webster_api_key)
     }
@@ -146,6 +148,7 @@ class WordViewModel @Inject constructor(
                     return@launch
                 }
                 preferencesManager.decrementRefreshCount()
+                retryCount = 0 // Reset retry count for manual refresh
             }
 
             _contentState.value = WordContentState.Loading
@@ -199,6 +202,7 @@ class WordViewModel @Inject constructor(
                 val actualWord = entry.meta.id.split(":").first()
                 val pos = entry.functionalLabel
                 val def = entry.shortDefinitions.firstOrNull() ?: "No definition found"
+                retryCount = 0 // Success, reset retries
                 fetchNewsUsage(word, entry.meta.stems, actualWord, pos, def)
             } else {
                 fetchFallbackWordData(word)
@@ -213,9 +217,19 @@ class WordViewModel @Inject constructor(
             val meaning = response.meanings.firstOrNull()
             val pos = meaning?.partOfSpeech ?: "N/A"
             val def = meaning?.definitions?.firstOrNull()?.definition ?: "No definition found"
+            retryCount = 0 // Success, reset retries
             fetchNewsUsage(word, emptyList(), response.word, pos, def)
         }.onFailure {
-            _contentState.value = WordContentState.Error("Word data currently unavailable.")
+            handleWordFetchFailure()
+        }
+    }
+
+    private fun handleWordFetchFailure() {
+        if (retryCount < MAX_RETRIES) {
+            retryCount++
+            refreshWord(isManual = false) // Automatically try another word
+        } else {
+            _contentState.value = WordContentState.Error("Word data currently unavailable. Please check your connection.")
         }
     }
 
