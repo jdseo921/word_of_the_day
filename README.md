@@ -56,8 +56,3 @@ A feature-rich Android application that helps users expand their vocabulary by p
 2. Open the project in Android Studio.
 3. Add your API keys to `res/values/strings.xml`.
 4. Build and run on an emulator or physical device.
-
----
-
-## 📚 License
-This project is developed for educational purposes as part of the CP3406/CP5307 Assessment.
